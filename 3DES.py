@@ -8,14 +8,14 @@ import time
 
 def encrypt_file(input_path, output_path, key):
     """Correct implementation of block encryption (3DES)"""
-    # 3DES 的分组大小为 8 字节
+    # Block size for 3DES is 8 bytes
     iv = os.urandom(DES3.block_size)
     cipher = DES3.new(key, DES3.MODE_CBC, iv)
     
     with open(input_path, 'rb') as f_in, open(output_path, 'wb') as f_out:
         f_out.write(iv)
         buffer = b''
-        # 为了与 AES 方案保持一致，这里也用 16KB 块；3DES.block_size=8
+        # To maintain consistency with the AES scheme, we'll also use 16KB blocks; 3DES.block_size=8
         chunk_size = 1024 * DES3.block_size  # 8*1024=8192 bytes
         
         while True:
@@ -24,7 +24,7 @@ def encrypt_file(input_path, output_path, key):
                 break
             buffer += chunk
             
-            # Process complete blocks (整分组)
+            # Process complete blocks
             full_blocks = len(buffer) // DES3.block_size
             if full_blocks == 0:
                 continue
@@ -45,7 +45,7 @@ def encrypt_file(input_path, output_path, key):
 def decrypt_file(input_path, output_path, key):
     """Correct implementation of block decryption (3DES)"""
     with open(input_path, 'rb') as f_in:
-        # 读取最前面的 IV
+        # Read the IV from the beginning
         iv = f_in.read(DES3.block_size)
         cipher = DES3.new(key, DES3.MODE_CBC, iv)
         
@@ -57,26 +57,26 @@ def decrypt_file(input_path, output_path, key):
                 chunk = f_in.read(chunk_size)
                 if not chunk:
                     break
-                # 解密后放入 buffer
+                # Decrypt and put into buffer
                 buffer += cipher.decrypt(chunk)
                 
-                # 与 AES 方案相同，保留最后一个分组给 unpad
+                # Same as the AES scheme, reserve the last block for unpad
                 full_blocks = (len(buffer) - DES3.block_size) // DES3.block_size
                 if full_blocks > 0:
-                    # 写出除“最后一个块”之外的所有完整块
+                    # Write all complete blocks except the "last block"
                     blocks_to_write = buffer[:full_blocks * DES3.block_size]
                     f_out.write(blocks_to_write)
                     buffer = buffer[full_blocks * DES3.block_size:]
             
-            # 对最后保留的一块执行 unpad
+            # Perform unpad on the last reserved block
             decrypted_data = unpad(buffer, DES3.block_size)
             f_out.write(decrypted_data)
 
 def speed_test(test_files, key):
     """Improved performance test function for 3DES"""
-    # 这里与 AES 版本保持一致，只是使用同样的测试目录/文件
+    # Consistent with the AES version, just using the same test directory/files
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    random_dir = os.path.join(base_dir, "test")  # 你示例中使用的是 "test" 目录
+    random_dir = os.path.join(base_dir, "test")  # In your example, the "test" directory is used
     
     os.makedirs(os.path.join(random_dir, "encrypted"), exist_ok=True)
     os.makedirs(os.path.join(random_dir, "decrypted"), exist_ok=True)
@@ -138,12 +138,12 @@ def print_results(results):
         ))
 
 if __name__ == "__main__":
-    # 生成3DES密钥。3DES通常使用24字节键长（含校验位需确保正确的奇偶校验）
-    # PyCryptodome提供了adjust_key_parity来修正key的奇偶校验位，保证合法3DES密钥
-    from Crypto.Util import Counter  # 如果需要，也可用于计数器模式，这里不需要
+    # Generate 3DES key. 3DES typically uses 24-byte key length (including parity bits to ensure correct parity check)
+    # PyCryptodome provides adjust_key_parity to correct the parity bits of the key, ensuring a valid 3DES key
+    from Crypto.Util import Counter  # If needed, can be used for counter mode, not needed here
     key_3des = DES3.adjust_key_parity(os.urandom(24))
 
-    # 与 AES 示例相同的测试文件列表
+    # Same test file list as the AES example
     test_files = [
         "1kbtest.txt",
         "10kbtest.txt",
@@ -152,7 +152,7 @@ if __name__ == "__main__":
         "5mbtest.txt"
     ]
     
-    # 执行3DES方案的速度测试
+    # Run speed test for the 3DES scheme
     test_results = speed_test(test_files, key_3des)
-    # 输出结果，格式与AES一致
+    # Output results, format consistent with AES
     print_results(test_results)
